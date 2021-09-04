@@ -1,0 +1,6 @@
+input_scaling: 0.7
+layers: 2
+leaky: 1.0
+learning_rate: 0.001
+radius: 0.99
+units: 1000

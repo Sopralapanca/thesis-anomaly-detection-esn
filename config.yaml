@@ -1,0 +1,72 @@
+# Runtime params
+#===================================
+
+# program execution mode
+# train: trains a new models, it does not perform any prediction and no anomaly detection
+# train_and_predict: performs a complete execution of the program with training and anomaly detection
+# predict: makes predictions using models already trained using use_id as project folder and performs anomaly detection
+# search_p: tries different values for p parameter, use use_id as project folder to load predictions
+# find_hp: starts hyperparameters search for ESN models
+execution: "train_and_predict" #train, predict, train_and_predict, search_p, find_hp
+use_id: ""   # folder name where prior trained models have been saved
+load_hp: True # if true, during training loads hyperparameters found from the hp_research_id folder for ESN models
+model_architecture: "ESN" # neural network architecture LSTM, ESN
+name: "2layers_final" # project name folder
+
+#hyperparameters search
+hp_research_id: "ESN_2layers_2021-08-23_12.46.41" # project folder for hyperparameters research
+
+save_graphs: True # if True saves the graphs for loss and validation loss
+
+# number of values to evaluate in each batch
+batch_size: 70
+
+# number of trailing batches to use in error calculation
+window_size: 30
+
+#forse mancano i veri negativi
+# Columns headers for output file
+header: ["run_id", "chan_id", "spacecraft", "num_anoms", "anomaly_sequences", "class", "true_positives", 
+        "false_positives", "false_negatives", "tp_sequences", "fp_sequences", "gaussian_p-value", "num_values",
+        "normalized_error", "eval_time", "scores"]
+
+# determines window size used in EWMA smoothing (percentage of total values for channel)
+smoothing_perc: 0.05
+
+# number of values surrounding an error that are brought into the sequence (promotes grouping on nearby sequences
+error_buffer: 100
+
+# LSTM, ESN parameters
+# ==================================
+loss_metric: 'mse'
+optimizer: 'adam'
+validation_split: 0.2
+dropout: 0.3
+lstm_batch_size: 64
+esn_batch_number: 32
+
+# maximum number of epochs allowed (if early stopping criteria not met)
+epochs: 150
+
+# network architecture [<neurons in hidden layer>, <neurons in hidden layer>]
+# Size of input layer not listed - dependent on evr modules and types included (see 'evr_modules' and 'erv_types' above)
+layers: [80, 80]
+
+# Number of consequetive training iterations to allow without decreasing the val_loss by at least min_delta 
+patience: 10
+min_delta: 0.0003
+
+# num previous timesteps provided to model to predict future values
+l_s: 250
+
+# number of steps ahead to predict
+n_predictions: 10
+
+# Error thresholding parameters
+# ==================================
+
+
+precision_threshold: 0.70
+recall_threshold: 0.70
+# minimum percent decrease between max errors in anomalous sequences (used for pruning)
+p: 0.11
