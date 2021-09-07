@@ -4,40 +4,6 @@ import numpy as np
 from tensorflow.keras.models import Sequential
 import os
 import random
-import logging
-
-
-def _bytes_feature(value):
-  if isinstance(value, type(tf.constant(0))):
-    value = value.numpy()
-  return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
-
-def serialize_example(x,y):
-  feature = {
-      'x': _bytes_feature(tf.io.serialize_tensor(x)),
-      'y': _bytes_feature(tf.io.serialize_tensor(y)),
-  }
-
-  # Create a Features message using tf.train.Example.
-
-  example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
-  return example_proto.SerializeToString()
-
-
-def read_tfrecord(example):
-    tfrecord_format = (
-        {
-            "x": tf.io.FixedLenFeature([], tf.string),
-            "y": tf.io.FixedLenFeature([], tf.string),
-        }
-    )
-    example = tf.io.parse_single_example(example, tfrecord_format)
-
-    x = tf.io.parse_tensor(example['x'], out_type=tf.float32)
-    y = tf.io.parse_tensor(example['y'], out_type=tf.double)
-
-    return x, y
-
 
 def sparse_eye(M):
     # Generates an M x M matrix to be used as sparse identity matrix for the
@@ -136,21 +102,7 @@ class ReservoirCell(keras.layers.Layer):
 
         return output, [output]
 
-    def get_config(self):
-        base_config = super().get_config()
-
-        return {**base_config,
-                "units": self.units,
-                "spectral_radius": self.spectral_radius,
-                "leaky": self.leaky,
-                "input_scaling": self.input_scaling,
-                "state_size": self.state_size
-                }
-
-    def from_config(cls, config):
-        return cls(**config)
-
-class SimpleESN(keras.Model):
+class ESNnoprecalcolo(keras.Model):
     def __init__(self,units=100, input_scaling=1,
                  spectral_radius=0.99, leaky=1,
                  config = None, SEED=42, layers=1, connectivity_recurrent=10,
@@ -208,89 +160,3 @@ class SimpleESN(keras.Model):
         r = self.reservoir(inputs)
         y = self.readout(r)
         return y
-
-    def get_config(self):
-        return {"units": self.units,
-                "input_scaling": self.input_scaling,
-                "spectral_radius": self.spectral_radius,
-                "leaky": self.leaky,
-                "config": self.config,
-                "connectivity_recurrent":self.connectivity_recurrent,
-                "n_layers": self.n_layers}
-
-    def from_config(cls, config):
-        return cls(**config)
-
-    def generator(self, dataset):
-        ds = dataset.repeat().prefetch(tf.data.AUTOTUNE)
-        iterator = iter(ds)
-        x, y = iterator.get_next()
-
-        while True:
-            yield x, y
-
-    #da eliminare
-    def secondsToStr(self, t):
-        from functools import reduce
-        return "%dh:%02dm:%02ds.%03dms" % \
-               reduce(lambda ll, b: divmod(ll[0], b) + ll[1:],
-                      [(t * 1000,), 1000, 60, 60])
-
-    def fit(self, x, y, **kwargs):
-        import time
-        logger = logging.getLogger('tests.log')
-
-        N = self.config.esn_batch_number
-        training_steps = x.shape[0]//N
-        train_reservoir = "./temp_files/train_reservoir.tfrecord"
-
-        start_time = time.time()
-
-        with tf.io.TFRecordWriter(train_reservoir) as file_writer:
-            for i in range(N):
-                X_train = self.reservoir(x[i * training_steps:(i + 1) * training_steps])
-                y_train = y[i * training_steps:(i + 1) * training_steps]
-
-                example = serialize_example(X_train, y_train)
-
-                file_writer.write(example)
-
-        #validation data
-        x_val, y_val = kwargs['validation_data']
-        validation_steps = x_val.shape[0] // N
-        valid_reservoir = "./temp_files/valid_reservoir.tfrecord"
-
-        #channel d-12 has validation shape (9,250,25)
-        if validation_steps == 0:
-            train_ds = (tf.data.TFRecordDataset(train_reservoir)
-                  .map(read_tfrecord))
-            iterator = train_ds.repeat().prefetch(tf.data.AUTOTUNE).as_numpy_iterator()
-
-            x_val_1 = self.reservoir(x_val)
-            kwargs['validation_data'] = (x_val_1, y_val)
-            return self.readout.fit(iterator, steps_per_epoch=N, **kwargs)
-
-        else:
-            with tf.io.TFRecordWriter(valid_reservoir) as file_writer:
-                for i in range(N):
-                    x_val_1 = self.reservoir(x_val[i * validation_steps:(i + 1) * validation_steps])
-                    y_val_1 = y_val[i * validation_steps:(i + 1) * validation_steps]
-
-                    example = serialize_example(x_val_1, y_val_1)
-
-                    file_writer.write(example)
-
-        end_time = time.time() - start_time
-        time_string = self.secondsToStr(end_time)
-        logger.info("Tempo precalcolo+scrittura reservoir: "+time_string)
-
-        # reading tfrecord files
-        train_dataset = tf.data.TFRecordDataset(train_reservoir).map(read_tfrecord)
-        train_ds = self.generator(train_dataset)
-        validation_dataset = tf.data.TFRecordDataset(valid_reservoir).map(read_tfrecord)
-        valid_ds = self.generator(validation_dataset)
-
-        kwargs['validation_data'] = (valid_ds)
-
-
-        return self.readout.fit(train_ds, steps_per_epoch=N, validation_steps = validation_steps, **kwargs)
