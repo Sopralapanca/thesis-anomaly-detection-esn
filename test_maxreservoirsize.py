@@ -9,8 +9,10 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import tensorflow as tf
 tf.autograph.set_verbosity(0)
 
+#800 va bene
+
 epochs = 5
-units = 800
+units = 950
 input_scaling=1
 spectral_radius=0.99
 leaky=0.8

@@ -239,7 +239,7 @@ class Model:
 
     def batch_predict(self, channel):
         """
-        Used trained LSTM model to predict test data arriving in batches.
+        Used trained LSTM or ESN model to predict test data arriving in batches.
 
         Args:
             channel (obj): Channel class object containing train/test data

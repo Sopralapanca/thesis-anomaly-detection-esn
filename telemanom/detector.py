@@ -243,13 +243,12 @@ class Detector:
         }
 
         matched_true_seqs = []
-
+        #label row riga del labeled anomalies
         label_row['anomaly_sequences'] = eval(label_row['anomaly_sequences'])
         result_row['num_true_anoms'] += len(label_row['anomaly_sequences'])
         result_row['scores'] = errors.anom_scores
 
-        #numero veri negativi per ogni riga
-
+        #numero sequenze negative per ogni canale di telemetria
         idx = label_row['anomaly_sequences']
         if idx[0][0] > 0 and idx[-1][-1] < label_row['num_values']:
             total_negatives = len(label_row['anomaly_sequences']) +1
@@ -295,7 +294,9 @@ class Detector:
                                                           matched_true_seqs, axis=0))
 
 
-
+        #calcolo veri negativi identificati dal modello
+        #se ho dei falsi positivi significa che non ho identificato correttamente una sequenza vera negativa
+        # quindi sottraggo dal totale di veri negativi
         n_fp = len(result_row['fp_sequences'])
         row_true_negative = total_negatives - n_fp
         if row_true_negative <0:
