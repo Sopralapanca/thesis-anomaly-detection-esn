@@ -57,6 +57,7 @@ class ReservoirCell(keras.layers.Layer):
 
     def __init__(self, units, SEED,
                  input_scaling=1., spectral_radius=0.99, leaky=1,connectivity_recurrent=1,
+                 circular_law=False,
                  **kwargs):
 
         self.units = units
@@ -66,6 +67,7 @@ class ReservoirCell(keras.layers.Layer):
         self.leaky = leaky
         self.connectivity_recurrent = connectivity_recurrent
         self.SEED = SEED
+        self.circular_law = circular_law,
         super().__init__(**kwargs)
 
     def build(self, input_shape):
@@ -73,24 +75,30 @@ class ReservoirCell(keras.layers.Layer):
         self.kernel = tf.random.uniform((input_shape[-1], self.units), minval=-1, maxval=1) * self.input_scaling
 
         # build the recurrent weight matrix
-        W = sparse_recurrent_tensor(self.units, C=self.connectivity_recurrent)
+        if self.circular_law:
+            # uses circular law to determine the values of the recurrent weight matrix
+            value = (self.spectral_radius / np.sqrt(self.units)) * (6 / np.sqrt(12))
+            self.recurrent_kernel = tf.random.uniform(shape=(self.units, self.units), minval=-value, maxval=value)
 
-        # re-scale the weight matrix to control the effective spectral radius of the linearized system
-        if (self.leaky == 1):
-            # if no leakage then rescale the W matrix
-            # compute the spectral radius of the randomly initialized matrix
-            e, _ = tf.linalg.eig(tf.sparse.to_dense(W))
-            rho = max(abs(e))
-            # rescale the matrix to the desired spectral radius
-            W = W * (self.spectral_radius / rho)
-            self.recurrent_kernel = W
         else:
-            I = sparse_eye(self.units)
-            W2 = tf.sparse.add(I * (1 - self.leaky), W * self.leaky)
-            e, _ = tf.linalg.eig(tf.sparse.to_dense(W2))
-            rho = max(abs(e))
-            W2 = W2 * (self.spectral_radius / rho)
-            self.recurrent_kernel = tf.sparse.add(W2, I * (self.leaky - 1)) * (1 / self.leaky)
+            W = sparse_recurrent_tensor(self.units, C=self.connectivity_recurrent)
+
+            # re-scale the weight matrix to control the effective spectral radius of the linearized system
+            if (self.leaky == 1):
+                # if no leakage then rescale the W matrix
+                # compute the spectral radius of the randomly initialized matrix
+                e, _ = tf.linalg.eig(tf.sparse.to_dense(W))
+                rho = max(abs(e))
+                # rescale the matrix to the desired spectral radius
+                W = W * (self.spectral_radius / rho)
+                self.recurrent_kernel = W
+            else:
+                I = sparse_eye(self.units)
+                W2 = tf.sparse.add(I * (1 - self.leaky), W * self.leaky)
+                e, _ = tf.linalg.eig(tf.sparse.to_dense(W2))
+                rho = max(abs(e))
+                W2 = W2 * (self.spectral_radius / rho)
+                self.recurrent_kernel = tf.sparse.add(W2, I * (self.leaky - 1)) * (1 / self.leaky)
 
         self.bias = tf.random.uniform(shape=(self.units,), minval=-1, maxval=1) * self.input_scaling
 
@@ -100,7 +108,11 @@ class ReservoirCell(keras.layers.Layer):
         # computes the output of the cell given the input and previous state
         prev_output = states[0]
         input_part = tf.matmul(inputs, self.kernel)
-        state_part = tf.sparse.sparse_dense_matmul(prev_output, self.recurrent_kernel)
+        if self.circular_law:
+            state_part = tf.matmul(prev_output, self.recurrent_kernel)
+        else:
+            state_part = tf.sparse.sparse_dense_matmul(prev_output, self.recurrent_kernel)
+
         output = prev_output * (1 - self.leaky) + tf.nn.tanh(input_part + self.bias + state_part) * self.leaky
 
         return output, [output]
@@ -110,6 +122,7 @@ class ESNnoser(keras.Model):
     def __init__(self,units=100, input_scaling=1,
                  spectral_radius=0.99, leaky=1,
                  config = None, SEED=42, layers=1, connectivity_recurrent=10,
+                 circular_law = False,
                  **kwargs):
         super().__init__(**kwargs)
 
@@ -120,6 +133,7 @@ class ESNnoser(keras.Model):
         self.leaky = leaky
         self.n_layers = layers
         self.connectivity_recurrent = connectivity_recurrent
+        self.circular_law = circular_law
 
         self.SEED = SEED
 
@@ -139,7 +153,7 @@ class ESNnoser(keras.Model):
                                                         units=units,
                                                         spectral_radius=spectral_radius, leaky=leaky,
                                                         connectivity_recurrent = connectivity_recurrent,
-                                                        input_scaling=input_scaling,
+                                                        input_scaling=input_scaling, circular_law=self.circular_law,
                                                         SEED=self.SEED),
                                 return_sequences=True
                             )
@@ -149,7 +163,7 @@ class ESNnoser(keras.Model):
             units=units,
             spectral_radius=spectral_radius, leaky=leaky,
             connectivity_recurrent=connectivity_recurrent,
-            input_scaling=input_scaling,
+            input_scaling=input_scaling, circular_law=self.circular_law,
             SEED=self.SEED)
                         )
         )
@@ -166,26 +180,26 @@ class ESNnoser(keras.Model):
         return y
 
     #da eliminare
-    def secondsToStr(self, t):
+    """def secondsToStr(self, t):
         from functools import reduce
         return "%dh:%02dm:%02ds.%03dms" % \
                reduce(lambda ll, b: divmod(ll[0], b) + ll[1:],
-                      [(t * 1000,), 1000, 60, 60])
+                      [(t * 1000,), 1000, 60, 60])"""
 
     def fit(self, x, y, **kwargs):
-        import time
-        logger = logging.getLogger('tests.log')
+        #import time
+        #logger = logging.getLogger('tests.log')
 
-        start_time = time.time()
+        #start_time = time.time()
 
         X_train = self.reservoir(x)
         x_val, y_val = kwargs['validation_data']
         x_val_1 = self.reservoir(x_val)
         kwargs['validation_data'] = (x_val_1, y_val)
 
-        end_time = time.time() - start_time
-        time_string = self.secondsToStr(end_time)
-        logger.info("Tempo precalcolo reservoir: "+time_string)
+        #end_time = time.time() - start_time
+        #time_string = self.secondsToStr(end_time)
+        #logger.info("Tempo precalcolo reservoir: "+time_string)
 
         kwargs['validation_data'] = (x_val_1, y_val)
 

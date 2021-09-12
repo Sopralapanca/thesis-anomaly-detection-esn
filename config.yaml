@@ -7,14 +7,14 @@
 # predict: makes predictions using models already trained using use_id as project folder and performs anomaly detection
 # search_p: tries different values for p parameter, use use_id as project folder to load predictions
 # find_hp: starts hyperparameters search for ESN models
-execution: "train_and_predict" #train, predict, train_and_predict, search_p, find_hp
-use_id: ""   # folder name where prior trained models have been saved
+execution: "predict" #train, predict, train_and_predict, search_p, find_hp
+use_id: "ESN_2layers_circular_law_2021-09-11_16.32.08"   # folder name where prior trained models have been saved
 load_hp: True # if true, during training loads hyperparameters found from the hp_research_id folder for ESN models
 model_architecture: "ESN" # neural network architecture LSTM, ESN
-name: "2layers_final" # project name folder
+name: "2layers_circular_law" # project name folder
 
 #hyperparameters search
-hp_research_id: "ESN_2layers_2021-08-23_12.46.41" # project folder for hyperparameters research
+hp_research_id: "ESN_2layers_circular_law_2021-09-11_19.56.08" # project folder for hyperparameters research
 
 save_graphs: True # if True saves the graphs for loss and validation loss
 

@@ -88,6 +88,7 @@ class ReservoirCell(keras.layers.Layer):
 
     def __init__(self, units, SEED,
                  input_scaling=1., spectral_radius=0.99, leaky=1,connectivity_recurrent=1,
+                 circular_law=False,
                  **kwargs):
 
         self.units = units
@@ -97,6 +98,7 @@ class ReservoirCell(keras.layers.Layer):
         self.leaky = leaky
         self.connectivity_recurrent = connectivity_recurrent
         self.SEED = SEED
+        self.circular_law = circular_law,
         super().__init__(**kwargs)
 
     def build(self, input_shape):
@@ -104,24 +106,30 @@ class ReservoirCell(keras.layers.Layer):
         self.kernel = tf.random.uniform((input_shape[-1], self.units), minval=-1, maxval=1) * self.input_scaling
 
         # build the recurrent weight matrix
-        W = sparse_recurrent_tensor(self.units, C=self.connectivity_recurrent)
+        if self.circular_law:
+            # uses circular law to determine the values of the recurrent weight matrix
+            value = (self.spectral_radius / np.sqrt(self.units)) * (6 / np.sqrt(12))
+            self.recurrent_kernel = tf.random.uniform(shape=(self.units, self.units), minval=-value, maxval=value)
 
-        # re-scale the weight matrix to control the effective spectral radius of the linearized system
-        if (self.leaky == 1):
-            # if no leakage then rescale the W matrix
-            # compute the spectral radius of the randomly initialized matrix
-            e, _ = tf.linalg.eig(tf.sparse.to_dense(W))
-            rho = max(abs(e))
-            # rescale the matrix to the desired spectral radius
-            W = W * (self.spectral_radius / rho)
-            self.recurrent_kernel = W
         else:
-            I = sparse_eye(self.units)
-            W2 = tf.sparse.add(I * (1 - self.leaky), W * self.leaky)
-            e, _ = tf.linalg.eig(tf.sparse.to_dense(W2))
-            rho = max(abs(e))
-            W2 = W2 * (self.spectral_radius / rho)
-            self.recurrent_kernel = tf.sparse.add(W2, I * (self.leaky - 1)) * (1 / self.leaky)
+            W = sparse_recurrent_tensor(self.units, C=self.connectivity_recurrent)
+
+            # re-scale the weight matrix to control the effective spectral radius of the linearized system
+            if (self.leaky == 1):
+                # if no leakage then rescale the W matrix
+                # compute the spectral radius of the randomly initialized matrix
+                e, _ = tf.linalg.eig(tf.sparse.to_dense(W))
+                rho = max(abs(e))
+                # rescale the matrix to the desired spectral radius
+                W = W * (self.spectral_radius / rho)
+                self.recurrent_kernel = W
+            else:
+                I = sparse_eye(self.units)
+                W2 = tf.sparse.add(I * (1 - self.leaky), W * self.leaky)
+                e, _ = tf.linalg.eig(tf.sparse.to_dense(W2))
+                rho = max(abs(e))
+                W2 = W2 * (self.spectral_radius / rho)
+                self.recurrent_kernel = tf.sparse.add(W2, I * (self.leaky - 1)) * (1 / self.leaky)
 
         self.bias = tf.random.uniform(shape=(self.units,), minval=-1, maxval=1) * self.input_scaling
 
@@ -131,7 +139,11 @@ class ReservoirCell(keras.layers.Layer):
         # computes the output of the cell given the input and previous state
         prev_output = states[0]
         input_part = tf.matmul(inputs, self.kernel)
-        state_part = tf.sparse.sparse_dense_matmul(prev_output, self.recurrent_kernel)
+        if self.circular_law:
+            state_part = tf.matmul(prev_output, self.recurrent_kernel)
+        else:
+            state_part = tf.sparse.sparse_dense_matmul(prev_output, self.recurrent_kernel)
+
         output = prev_output * (1 - self.leaky) + tf.nn.tanh(input_part + self.bias + state_part) * self.leaky
 
         return output, [output]
@@ -151,9 +163,10 @@ class ReservoirCell(keras.layers.Layer):
         return cls(**config)
 
 class SimpleESN(keras.Model):
-    def __init__(self,units=100, input_scaling=1,
+    def __init__(self, units=100, input_scaling=1,
                  spectral_radius=0.99, leaky=1,
-                 config = None, SEED=42, layers=1, connectivity_recurrent=10,
+                 config=None, SEED=42, layers=1, connectivity_recurrent=10,
+                 circular_law=False,
                  **kwargs):
         super().__init__(**kwargs)
 
@@ -164,6 +177,7 @@ class SimpleESN(keras.Model):
         self.leaky = leaky
         self.n_layers = layers
         self.connectivity_recurrent = connectivity_recurrent
+        self.circular_law = circular_law
 
         self.SEED = SEED
 
@@ -176,29 +190,26 @@ class SimpleESN(keras.Model):
         np.random.seed(self.SEED)
         tf.random.set_seed(self.SEED)
 
-
         self.reservoir = Sequential()
-        for i in range(self.n_layers-1):
+        for i in range(self.n_layers - 1):
             self.reservoir.add(tf.keras.layers.RNN(cell=ReservoirCell(
-                                                        units=units,
-                                                        spectral_radius=spectral_radius, leaky=leaky,
-                                                        connectivity_recurrent = connectivity_recurrent,
-                                                        input_scaling=input_scaling,
-                                                        SEED=self.SEED),
-                                return_sequences=True
-                            )
+                units=units,
+                spectral_radius=spectral_radius, leaky=leaky,
+                connectivity_recurrent=connectivity_recurrent,
+                input_scaling=input_scaling, circular_law=self.circular_law,
+                SEED=self.SEED),
+                return_sequences=True
             )
-        #last reservoir
+            )
+        # last reservoir
         self.reservoir.add(tf.keras.layers.RNN(cell=ReservoirCell(
             units=units,
             spectral_radius=spectral_radius, leaky=leaky,
             connectivity_recurrent=connectivity_recurrent,
-            input_scaling=input_scaling,
+            input_scaling=input_scaling, circular_law=self.circular_law,
             SEED=self.SEED)
-                        )
         )
-
-
+        )
 
         self.readout = Sequential()
         self.readout.add(tf.keras.layers.Dense(config.n_predictions))
@@ -282,7 +293,7 @@ class SimpleESN(keras.Model):
 
         end_time = time.time() - start_time
         time_string = self.secondsToStr(end_time)
-        logger.info("Tempo precalcolo+scrittura reservoir: "+time_string)
+        logger.info("Tempo precalcolo++scrittura reservoir: "+time_string)
 
         # reading tfrecord files
         train_dataset = tf.data.TFRecordDataset(train_reservoir).map(read_tfrecord)
