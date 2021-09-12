@@ -80,7 +80,7 @@ def plotting_p(precision=None, recall=None, p=None, focus=False, run_id="",
 
             switch *= -1
 
-    ax.set_xlim(0.4, 1)
+    ax.set_xlim(0.5, 0.8)
     ax.set_ylim(0.4, 1)
     ax.set_xlabel(r'Precision', fontsize=15)
     ax.set_ylabel(r'Recall', fontsize=15)
@@ -88,7 +88,7 @@ def plotting_p(precision=None, recall=None, p=None, focus=False, run_id="",
     legend = ax.legend(loc='best', shadow=True, fontsize='x-large')
 
     ax.grid(True)
-    fig.set_size_inches(18.5, 8.5)
+    fig.set_size_inches(8, 6)
 
     plt.savefig(os.path.join('data', run_id,
                              'PrecisionVSRecall_{}.png'.format(j)))

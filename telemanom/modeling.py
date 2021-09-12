@@ -62,8 +62,6 @@ class Model:
         self.y_hat = np.array([])
         self.model = None
 
-        #da sistemare pure questa
-        #if not self.config.train and not self.config.train_only:
         if self.config.execution == "predict":
             try:
                 logger.info('Loading pre-trained model')

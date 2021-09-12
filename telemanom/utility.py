@@ -67,7 +67,8 @@ def create_esn_model(channel,config, hp, seed):
                           spectral_radius=float(hp["radius"]),
                           leaky=float(hp["leaky"]),
                           SEED=seed,
-                          layers=int(hp["layers"])
+                          layers=int(hp["layers"]),
+                          circular_law=True
                           )
 
         model.build(input_shape=(channel.X_train.shape[0], channel.X_train.shape[1], channel.X_train.shape[2]))
