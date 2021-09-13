@@ -6,15 +6,15 @@
 # train_and_predict: performs a complete execution of the program with training and anomaly detection
 # predict: makes predictions using models already trained using use_id as project folder and performs anomaly detection
 # search_p: tries different values for p parameter, use use_id as project folder to load predictions
-# find_hp: starts hyperparameters search for ESN models
-execution: "train" #train, predict, train_and_predict, search_p, find_hp
-use_id: "ESN_2layers_cl_noser_2021-09-13_09.51.05"   # folder name where prior trained models have been saved
+# find_hp: starts hyperparameters search for ESN or LSTM models
+execution: "find_hp" #train, predict, train_and_predict, search_p, find_hp
+use_id: ""   # folder name where prior trained models have been saved
 load_hp: True # if true, during training loads hyperparameters found from the hp_research_id folder for ESN models
-model_architecture: "ESN" # neural network architecture LSTM, ESN
-name: "2layers_cl_noser" # project name folder
+model_architecture: "LSTM" # neural network architecture LSTM, ESN
+name: "2l_new" # project name folder
 
 #hyperparameters search
-hp_research_id: "ESN_2layers_cl_noser_2021-09-13_03.13.05" # project folder for hyperparameters research
+hp_research_id: "ESN_2layers_cl_noser_2021-09-13_12.27.20" # project folder for hyperparameters research
 
 save_graphs: True # if True saves the graphs for loss and validation loss
 
@@ -42,7 +42,7 @@ loss_metric: 'mse'
 optimizer: 'adam'
 validation_split: 0.2
 dropout: 0.3
-lstm_batch_size: 64
+lstm_batch_size: 32
 esn_batch_number: 32
 
 # maximum number of epochs allowed (if early stopping criteria not met)
@@ -69,4 +69,4 @@ n_predictions: 10
 precision_threshold: 0.70
 recall_threshold: 0.70
 # minimum percent decrease between max errors in anomalous sequences (used for pruning)
-p: 0.11
+p: 0.07

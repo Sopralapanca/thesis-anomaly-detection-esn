@@ -23,7 +23,7 @@ class MyHyperModel(HyperModel):
 
     def build(self, hp):
         if self.model == "ESN":
-            units = hp.Choice("units",[100, 200, 300, 400, 500, 600, 700, 800, 900, 950])
+            units = hp.Choice("units",[100, 200, 300, 400, 500, 600, 700, 800, 850])
             model = ESNnoser(config=self.config,
                               units=units,
                               input_scaling=hp.Choice("input_scaling",[0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]),
@@ -43,9 +43,9 @@ class MyHyperModel(HyperModel):
             tf.random.set_seed(SEED)
 
             if self.layers > 1:
-                units = hp.Choice("units", values=[1,5,10,15,20,25])
+                units = hp.Choice("units", values=[1,5,10,15,19])
             else:
-                units = hp.Choice("units", values=[1, 5, 10, 15, 20, 25, 30, 35, 38])
+                units = hp.Choice("units", values=[1, 5, 10, 15, 20, 26])
 
             model = Sequential()
 

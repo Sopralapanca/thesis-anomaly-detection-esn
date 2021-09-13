@@ -3,12 +3,18 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import auc
 
 def plot_roc_curve(fpr, tpr, label=None):
-    plt.plot(fpr, tpr, linewidth=2, label=label)
-    plt.plot([0, 1], [0, 1], 'k--') # dashed diagonal
-    plt.axis([0, 1, 0, 1])
-    plt.xlabel('False Positive Rate (Fall-Out)', fontsize=16)
-    plt.ylabel('True Positive Rate (Recall)', fontsize=16)
-    plt.grid(True)
+    fig, ax = plt.subplots()
+    ax.plot(fpr, tpr, linewidth=2)
+    ax.plot([0, 1], [0, 1], 'k--')  # dashed diagonal
+
+    ax.set_xlim(0.0, 0.81)
+    ax.set_ylim(0.0, 0.81)
+    ax.set_xlabel('False Positive Rate (Fall-Out)', fontsize=16)
+    ax.set_ylabel('True Positive Rate (Recall)', fontsize=16)
+
+    ax.grid(True)
+
+    fig.set_size_inches(8, 6)
 
 
 def roc_curve(id):
