@@ -1,4 +1,5 @@
 from telemanom.ESN import SimpleESN
+from telemanom.ESNnoserializzazione import ESNnoser
 import yaml
 from keras_tuner.engine.hypermodel import HyperModel
 from keras_tuner.tuners import RandomSearch
@@ -22,10 +23,10 @@ class MyHyperModel(HyperModel):
 
     def build(self, hp):
         if self.model == "ESN":
-            units = hp.Int("units", 100, 1000, 100)
-            model = SimpleESN(config=self.config,
+            units = hp.Choice("units",[100, 200, 300, 400, 500, 600, 700, 800, 900, 950])
+            model = ESNnoser(config=self.config,
                               units=units,
-                              input_scaling=hp.Float("input_scaling", 0.5, 1, 0.10),
+                              input_scaling=hp.Choice("input_scaling",[0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]),
                               spectral_radius=hp.Choice("spectral_radius",
                                                         [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]),
                               leaky=hp.Float("leaky", 0.1, 1, 0.10),

@@ -1,8 +1,8 @@
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
 from tensorflow.keras.layers import LSTM, Dense, Dropout
-from telemanom.ESN import SimpleESN
-from telemanom.DeepESN import SimpleDeepESN
+#from telemanom.ESN import SimpleESN
+from telemanom.ESNnoserializzazione import ESNnoser
 import random
 
 def create_lstm_model(channel,config, hp):
@@ -53,7 +53,7 @@ def create_lstm_model(channel,config, hp):
 
 def create_esn_model(channel,config, hp, seed):
     if len(hp) == 0:
-        model = SimpleESN(config=config,
+        model = ESNnoser(config=config,
                           SEED=seed
                           )
         model.build(input_shape=(channel.X_train.shape[0], channel.X_train.shape[1], channel.X_train.shape[2]))
@@ -61,7 +61,7 @@ def create_esn_model(channel,config, hp, seed):
                       optimizer=config.optimizer)
 
     else:
-        model = SimpleESN(config=config,
+        model = ESNnoser(config=config,
                           units=int(hp["units"]),
                           input_scaling=float(hp["input_scaling"]),
                           spectral_radius=float(hp["radius"]),

@@ -6,8 +6,6 @@ import os
 import random
 import logging
 
-
-
 def sparse_eye(M):
     # Generates an M x M matrix to be used as sparse identity matrix for the
     # re-scaling of the sparse recurrent kernel in presence of non-zero leakage.
@@ -117,12 +115,25 @@ class ReservoirCell(keras.layers.Layer):
 
         return output, [output]
 
+    def get_config(self):
+        base_config = super().get_config()
+
+        return {**base_config,
+                "units": self.units,
+                "spectral_radius": self.spectral_radius,
+                "leaky": self.leaky,
+                "input_scaling": self.input_scaling,
+                "state_size": self.state_size
+                }
+
+    def from_config(cls, config):
+        return cls(**config)
 
 class ESNnoser(keras.Model):
-    def __init__(self,units=100, input_scaling=1,
+    def __init__(self, units=100, input_scaling=1,
                  spectral_radius=0.99, leaky=1,
-                 config = None, SEED=42, layers=1, connectivity_recurrent=10,
-                 circular_law = False,
+                 config=None, SEED=42, layers=1, connectivity_recurrent=10,
+                 circular_law=False,
                  **kwargs):
         super().__init__(**kwargs)
 
@@ -146,29 +157,26 @@ class ESNnoser(keras.Model):
         np.random.seed(self.SEED)
         tf.random.set_seed(self.SEED)
 
-
         self.reservoir = Sequential()
-        for i in range(self.n_layers-1):
+        for i in range(self.n_layers - 1):
             self.reservoir.add(tf.keras.layers.RNN(cell=ReservoirCell(
-                                                        units=units,
-                                                        spectral_radius=spectral_radius, leaky=leaky,
-                                                        connectivity_recurrent = connectivity_recurrent,
-                                                        input_scaling=input_scaling, circular_law=self.circular_law,
-                                                        SEED=self.SEED),
-                                return_sequences=True
-                            )
+                units=units,
+                spectral_radius=spectral_radius, leaky=leaky,
+                connectivity_recurrent=connectivity_recurrent,
+                input_scaling=input_scaling, circular_law=self.circular_law,
+                SEED=self.SEED),
+                return_sequences=True
             )
-        #last reservoir
+            )
+        # last reservoir
         self.reservoir.add(tf.keras.layers.RNN(cell=ReservoirCell(
             units=units,
             spectral_radius=spectral_radius, leaky=leaky,
             connectivity_recurrent=connectivity_recurrent,
             input_scaling=input_scaling, circular_law=self.circular_law,
             SEED=self.SEED)
-                        )
         )
-
-
+        )
 
         self.readout = Sequential()
         self.readout.add(tf.keras.layers.Dense(config.n_predictions))
@@ -179,12 +187,32 @@ class ESNnoser(keras.Model):
         y = self.readout(r)
         return y
 
+    def get_config(self):
+        return {"units": self.units,
+                "input_scaling": self.input_scaling,
+                "spectral_radius": self.spectral_radius,
+                "leaky": self.leaky,
+                "config": self.config,
+                "connectivity_recurrent":self.connectivity_recurrent,
+                "n_layers": self.n_layers}
+
+    def from_config(cls, config):
+        return cls(**config)
+
+    def generator(self, dataset):
+        ds = dataset.repeat().prefetch(tf.data.AUTOTUNE)
+        iterator = iter(ds)
+        x, y = iterator.get_next()
+
+        while True:
+            yield x, y
+
     #da eliminare
-    """def secondsToStr(self, t):
+    def secondsToStr(self, t):
         from functools import reduce
         return "%dh:%02dm:%02ds.%03dms" % \
                reduce(lambda ll, b: divmod(ll[0], b) + ll[1:],
-                      [(t * 1000,), 1000, 60, 60])"""
+                      [(t * 1000,), 1000, 60, 60])
 
     def fit(self, x, y, **kwargs):
         #import time
@@ -197,11 +225,7 @@ class ESNnoser(keras.Model):
         x_val_1 = self.reservoir(x_val)
         kwargs['validation_data'] = (x_val_1, y_val)
 
-        #end_time = time.time() - start_time
-        #time_string = self.secondsToStr(end_time)
-        #logger.info("Tempo precalcolo reservoir: "+time_string)
 
-        kwargs['validation_data'] = (x_val_1, y_val)
 
 
         return self.readout.fit(X_train,y, **kwargs)
