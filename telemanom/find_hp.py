@@ -23,7 +23,7 @@ class MyHyperModel(HyperModel):
 
     def build(self, hp):
         if self.model == "ESN":
-            units = hp.Choice("units",[100, 200, 300, 400, 500, 600, 700, 800, 900, 950])
+            units = hp.Choice("units",[100, 200, 300, 400, 500, 600, 700, 800, 850])
             model = ESNnoser(config=self.config,
                               units=units,
                               input_scaling=hp.Choice("input_scaling",[0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]),
