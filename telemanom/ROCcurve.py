@@ -2,7 +2,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import auc
 
-def plot_roc_curve(fpr, tpr, label=None):
+
+
+def plot_roc_curve(fpr, tpr):
+    """
+    Plot the Receiver Operating Characteristic curve
+    :param fpr: list containing the values of the false positive rate as p varies
+    :param tpr: list containing the values of the true positive rate as p varies
+    :return: plot the Receiver Operating Characteristic curve
+    """
+
     fig, ax = plt.subplots()
     ax.plot(fpr, tpr, linewidth=2)
     ax.plot([0, 1], [0, 1], 'k--')  # dashed diagonal
@@ -16,8 +25,18 @@ def plot_roc_curve(fpr, tpr, label=None):
 
     fig.set_size_inches(8, 6)
 
+    plt.savefig('./data/{}/roc_curve.png'.format(id))
+    plt.show()
+
 
 def roc_curve(id):
+    """
+    Given the name of a folder of an experiment, it creates the graph for the roc curve and calculates the auroc score
+    :param id: folder name
+    :return: auroc score
+    """
+
+
     path='./data/{}/p_values.csv'.format(id)
     df = pd.read_csv(path)
 
@@ -39,10 +58,8 @@ def roc_curve(id):
         fpr_list.append(false_positive_rate)
 
 
-    plt.figure(figsize=(8, 6))
     plot_roc_curve(fpr_list, tpr_list)
-    plt.savefig('./data/{}/roc_curve.png'.format(id))
-    plt.show()
+
 
     return(auc(fpr_list,tpr_list))
 

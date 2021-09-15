@@ -1,36 +1,54 @@
 import pandas as pd
 import numpy as np
-folder = "LSTM_2layers_2021-08-31_09.27.38"
-csv_path = "./data/{}/losses.csv".format(folder)
+import os.path
+import argparse
 
-df = pd.read_csv(csv_path)
-train_avg_list = []
-valid_avg_list = []
-valid_std_list = []
-train_std_list = []
+parser = argparse.ArgumentParser(description='Parse name to project folder.')
+parser.add_argument('-f', '--folder_name', default=None, required=True)
+args = parser.parse_args()
 
-train_loss_df = df.filter(regex=("train_loss*"))
-valid_loss_df = df.filter(regex=("valid_loss*"))
+def calculate_avg_std(folder):
+    """
+    :param folder: folder name to which the losses.csv file belongs
+    :return: if the file exists, it calculates the mean and standard deviation and writes them to the file
+    """
 
-for i, row in train_loss_df.iterrows():
-    train_avg = np.mean(list(row.values))
-    train_avg_list.append(train_avg)
+    csv_path = "./data/{}/losses.csv".format(folder)
+    if os.path.isfile(csv_path):
+        print("losses file found at {}".format(csv_path))
+    else:
+        print("Can't find losses file at {}. Start the program with \"-f folder_name\" for example \"-f ESN_1layer_2021-08-31_20.45.38\"".format(csv_path))
+        return
 
-    train_std = np.std(list(row.values))
-    train_std_list.append(train_std)
+    df = pd.read_csv(csv_path)
+    train_avg_list = []
+    valid_avg_list = []
+    valid_std_list = []
+    train_std_list = []
 
-for i, row in valid_loss_df.iterrows():
-    valid_avg = np.mean(list(row.values))
-    valid_avg_list.append(valid_avg)
+    train_loss_df = df.filter(regex=("train_loss*"))
+    valid_loss_df = df.filter(regex=("valid_loss*"))
 
-    valid_std = np.std(list(row.values))
-    valid_std_list.append(valid_std)
+    for i, row in train_loss_df.iterrows():
+        train_avg = np.mean(list(row.values))
+        train_avg_list.append(train_avg)
 
-df["Train AVG"] = train_avg_list
-df["Valid AVG"] = valid_avg_list
-df["Train STD"] = train_std_list
-df["Valid STD"] = valid_std_list
+        train_std = np.std(list(row.values))
+        train_std_list.append(train_std)
 
-df.to_csv(csv_path, sep=',', index=False)
+    for i, row in valid_loss_df.iterrows():
+        valid_avg = np.mean(list(row.values))
+        valid_avg_list.append(valid_avg)
 
-#print della media
+        valid_std = np.std(list(row.values))
+        valid_std_list.append(valid_std)
+
+    df["Train AVG"] = train_avg_list
+    df["Valid AVG"] = valid_avg_list
+    df["Train STD"] = train_std_list
+    df["Valid STD"] = valid_std_list
+
+    df.to_csv(csv_path, sep=',', index=False)
+
+if __name__ == '__main__':
+    calculate_avg_std(folder=args.labels_path)

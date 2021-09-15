@@ -31,7 +31,7 @@ class MyHyperModel(HyperModel):
                                                         [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]),
                               leaky=hp.Float("leaky", 0.1, 1, 0.10),
                               layers=self.layers,
-                              circular_law=True,
+                              circular_law=self.config.circular_law,
                               SEED=SEED
                               )
             model.build(input_shape=(self.channel.X_train.shape[0], self.channel.X_train.shape[1], self.channel.X_train.shape[2]))

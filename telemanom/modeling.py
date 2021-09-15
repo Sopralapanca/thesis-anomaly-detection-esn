@@ -1,5 +1,4 @@
 import yaml
-from datetime import datetime
 from tensorflow.keras.models import load_model
 from tensorflow.keras.callbacks import History, EarlyStopping
 import sys
@@ -16,6 +15,14 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 logger = logging.getLogger('telemanom')
 
 def get_seed(folder, chan_id):
+    """
+    Read previously saved seeds
+    :param folder: folder for seeds file
+    :param chan_id: telemetry channel name
+    :return: returns the seed saved for a given telemetry channel
+    """
+
+
     path = f'./data/{folder}/models/seeds.log'
     file1 = open(path, 'r')
     seed = 0

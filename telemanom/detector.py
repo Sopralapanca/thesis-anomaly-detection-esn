@@ -15,7 +15,6 @@ from telemanom.modeling import Model
 from telemanom.find_hp import FindHP
 from telemanom.ROCcurve import roc_curve
 from pathlib import Path
-import shutil
 from functools import reduce
 
 logger = helpers.setup_logging()
@@ -42,12 +41,18 @@ def plotting_p(precision=None, recall=None, p=None, focus=False, run_id="",
     for i, txt in enumerate(p):
         if focus:
             try:
+
                 if p[i] in p2.to_list():
                     txt = "p: " + str(txt) + "\nrecall: {0:.2f}\n".format(recall[i])
                     txt = txt + "precision: {0:.2f}".format(precision[i])
 
+                    if precision[i] > 0.65:
+                        position = precision[i] - 0.15
+                    else:
+                        position = precision[i]
+
                     ax.annotate(txt, (precision[i], recall[i]), size=15,
-                                xytext=(precision[i], recall[i] + switch * xoffset),
+                                xytext=(position, recall[i] + switch * xoffset),
                                 xycoords='data', textcoords='data',
                                 bbox=bbox_props,
                                 arrowprops=dict(arrowstyle="->", color="0.5",
@@ -64,8 +69,13 @@ def plotting_p(precision=None, recall=None, p=None, focus=False, run_id="",
                 pass
         else:
             try:
+                if precision[i] > 0.75:
+                    position = precision[i] - 0.05
+                    xoffset *= 1.3
+                else:
+                    position = precision[i]
                 ax.annotate(txt, (precision[i], recall[i]), size=16,
-                        xytext=(precision[i], recall[i] + switch * xoffset),
+                        xytext=(position, recall[i] + switch * xoffset),
                         xycoords='data', textcoords='data',
                         bbox=bbox_props,
                         arrowprops=dict(arrowstyle="->", color="0.5",
@@ -613,18 +623,22 @@ class Detector:
             #focus on best p values
             precision_threshold = self.config.precision_threshold
             recall_threshold = self.config.recall_threshold
-            subsetx = sorted_df[(sorted_df['Precision'] >= precision_threshold) & (sorted_df['Recall'] >= recall_threshold)]
+            while True:
 
-            if not subsetx.empty:
+                subsetx = sorted_df[(sorted_df['Precision'] >= precision_threshold) & (sorted_df['Recall'] >= recall_threshold)]
 
-                p2 = subsetx["P"]
-                precision2 = subsetx["Precision"]
-                recall2 = subsetx["Recall"]
+                if not subsetx.empty:
 
-                plotting_p(precision=precision, recall=recall, p=p, focus=True, run_id=self.id,
-                           precision2=precision2, recall2=recall2, p2=p2)
-            else:
-                logger.info("No values found with threshold recall: {} precision: {}".format(recall_threshold, precision_threshold))
+                    p2 = subsetx["P"]
+                    precision2 = subsetx["Precision"]
+                    recall2 = subsetx["Recall"]
+
+                    plotting_p(precision=precision, recall=recall, p=p, focus=True, run_id=self.id,
+                               precision2=precision2, recall2=recall2, p2=p2)
+                    break
+                else:
+                    logger.info("No values found with threshold recall: {} precision: {}".format(recall_threshold, precision_threshold))
+                    recall_threshold -= 0.05
 
             #roc curve
             auc = roc_curve(self.id)
