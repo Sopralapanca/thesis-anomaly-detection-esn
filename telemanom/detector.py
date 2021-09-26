@@ -223,8 +223,7 @@ class Detector:
             chan_ids = [x.split('.')[0] for x in os.listdir('data/test/')]
             self.chan_df = pd.DataFrame({"chan_id": chan_ids})
 
-        if self.config.execution != "find_hp":
-            logger.info("{} channels found for processing."
+        logger.info("{} channels found for processing."
                     .format(len(self.chan_df)))
 
 
@@ -574,8 +573,8 @@ class Detector:
         """
         Initiate processing for all channels.
         """
-        if self.config.execution !=  "find_hp":
-            logger.info("Execution mode: {}\n".format(self.config.execution))
+        logger.info("Execution mode: {}\n".format(self.config.execution))
+
         if self.config.execution == "search_p":
             # header for csv file
             col_header = ["P", "Precision", "Recall", "Total True Positives", "Total False Positives", "Total False Negatives",

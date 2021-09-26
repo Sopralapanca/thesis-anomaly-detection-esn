@@ -7,13 +7,13 @@
 # predict: makes predictions using models already trained using use_id as project folder and performs anomaly detection
 # search_p: tries different values for p parameter, use use_id as project folder to load predictions
 # find_hp: starts hyperparameters search for ESN or LSTM models
-execution: "train_and_predict" #train, predict, train_and_predict, search_p, find_hp
+execution: "find_hp" #train, predict, train_and_predict, search_p, find_hp
 use_id: ""   # folder name where prior trained models have been saved
 load_hp: True # if true, during training loads hyperparameters found from the hp_research_id folder for ESN models
 model_architecture: "LSTM" # neural network architecture LSTM, ESN
-name: "2l_final" # project name folder
+name: "2l_150epochs" # project name folder
 
-hp_research_id: "LSTM_2l_new_2021-09-13_23.46.49" # project name folder for hyperparameters research
+hp_research_id: "" # project name folder for hyperparameters research
 
 save_graphs: True # if True saves the graphs for loss and validation loss
 
@@ -40,9 +40,16 @@ loss_metric: 'mse'
 optimizer: 'adam'
 validation_split: 0.2
 dropout: 0.3
-lstm_batch_size: 32
+lstm_batch_size: 64
 esn_batch_number: 32
 circular_law: True
+serialization: False #da inserire nel codice
+
+# model selection parameters
+# ==================================
+n_layers: 2
+max_trials: 50
+
 
 # maximum number of epochs allowed (if early stopping criteria not met)
 epochs: 150
