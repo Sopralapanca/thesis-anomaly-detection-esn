@@ -10,8 +10,8 @@
 execution: "find_hp" #train, predict, train_and_predict, search_p, find_hp
 use_id: ""   # folder name where prior trained models have been saved
 load_hp: True # if true, during training loads hyperparameters found from the hp_research_id folder for ESN models
-model_architecture: "LSTM" # neural network architecture LSTM, ESN
-name: "2l_150epochs" # project name folder
+model_architecture: "ESN" # neural network architecture LSTM, ESN
+name: "1l_150epochs" # project name folder
 
 hp_research_id: "" # project name folder for hyperparameters research
 
@@ -47,7 +47,7 @@ serialization: False #da inserire nel codice
 
 # model selection parameters
 # ==================================
-n_layers: 2
+n_layers: 1
 max_trials: 50
 
 

@@ -195,7 +195,8 @@ class ESNnoser(keras.Model):
                 "leaky": self.leaky,
                 "config": self.config,
                 "connectivity_recurrent":self.connectivity_recurrent,
-                "n_layers": self.n_layers}
+                "n_layers": self.n_layers,
+                "circular_law": self.circular_law}
 
     def from_config(cls, config):
         return cls(**config)
