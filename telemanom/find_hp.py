@@ -162,8 +162,8 @@ class FindHP():
             hp["radius"] = float("{:.2f}".format(best_hps.get('spectral_radius')))
             hp["leaky"] = float("{:.2f}".format(best_hps.get('leaky')))
 
-            logger.info("chan id: {}\n "
-                        "units: {}\n "
+            logger.info("chan id: {}\n"
+                        "units: {}\n"
                         "input_scaling: {}\n"
                         "radius: {}\n"
                         "leaky: {}\n"
