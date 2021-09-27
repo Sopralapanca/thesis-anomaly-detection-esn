@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import sys
 from telemanom.helpers import Config
-sys.path.append('../../../../Download/tmep/Thesis')
+sys.path.append('..')
 
 class Plotter:
     def __init__(self, run_id, config_path='config.yaml'):

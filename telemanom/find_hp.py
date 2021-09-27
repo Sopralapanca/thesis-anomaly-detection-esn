@@ -3,15 +3,16 @@ from telemanom.ESNnoserializzazione import ESNnoser
 import yaml
 from keras_tuner.engine.hypermodel import HyperModel
 from keras_tuner.tuners import RandomSearch
-
+import logging
 import tensorflow as tf
-
 from tensorflow.keras.layers import Dropout, Dense, LSTM
 from tensorflow.keras.models import Sequential
+from tensorflow.keras.callbacks import History, EarlyStopping
 import numpy as np
 import random
 
 SEED = 42
+logger = logging.getLogger('telemanom')
 
 class MyHyperModel(HyperModel):
     def __init__(self, config, channel, model, layers):
@@ -24,16 +25,30 @@ class MyHyperModel(HyperModel):
     def build(self, hp):
         if self.model == "ESN":
             units = hp.Choice("units",[100, 200, 300, 400, 500, 600, 700, 800, 850])
-            model = ESNnoser(config=self.config,
-                              units=units,
-                              input_scaling=hp.Choice("input_scaling",[0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]),
-                              spectral_radius=hp.Choice("spectral_radius",
-                                                        [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]),
-                              leaky=hp.Float("leaky", 0.1, 1, 0.10),
-                              layers=self.layers,
-                              circular_law=True,
-                              SEED=SEED
-                              )
+            if self.config.serialization == True:
+                model = ESNnoser(config=self.config,
+                                  units=units,
+                                  input_scaling=hp.Choice("input_scaling",[0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]),
+                                  spectral_radius=hp.Choice("spectral_radius",
+                                                            [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]),
+                                  leaky=hp.Float("leaky", 0.1, 1, 0.10),
+                                  layers=self.layers,
+                                  circular_law=self.config.circular_law,
+                                  SEED=SEED
+                                  )
+            else:
+                model = SimpleESN(config=self.config,
+                                 units=units,
+                                 input_scaling=hp.Choice("input_scaling",
+                                                         [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]),
+                                 spectral_radius=hp.Choice("spectral_radius",
+                                                           [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]),
+                                 leaky=hp.Float("leaky", 0.1, 1, 0.10),
+                                 layers=self.layers,
+                                 circular_law=self.config.circular_law,
+                                 SEED=SEED
+                                 )
+
             model.build(input_shape=(self.channel.X_train.shape[0], self.channel.X_train.shape[1], self.channel.X_train.shape[2]))
 
 
@@ -43,9 +58,9 @@ class MyHyperModel(HyperModel):
             tf.random.set_seed(SEED)
 
             if self.layers > 1:
-                units = hp.Choice("units", values=[1,5,10,15,20,25])
+                units = hp.Choice("units", values=[1,5,10,15,19])
             else:
-                units = hp.Choice("units", values=[1, 5, 10, 15, 20, 25, 30, 35, 38])
+                units = hp.Choice("units", values=[1, 5, 10, 15, 20, 26])
 
             model = Sequential()
 
@@ -80,17 +95,23 @@ class FindHP():
         self.run()
 
     def run(self):
-        layers = 2
+        layers = self.config.n_layers
         tuner = RandomSearch(
             MyHyperModel(config=self.config, channel=self.channel, model=self.model, layers=layers),
             objective="val_loss",
             directory='hp/{}/kerastuner'.format(self.id),
-            max_trials=50,
+            max_trials=self.config.max_trials,
             project_name=self.channel.id,
         )
 
-        # default hp
+        cbs = [History(), EarlyStopping(monitor='val_loss',
+                                        patience=self.config.patience,
+                                        min_delta=self.config.min_delta,
+                                        verbose=0)]
+
+        batch_size = self.config.lstm_batch_size
         if self.model == "ESN":
+            # default hp
             hp = {
                 'units': 100,
                 'input_scaling': 1,
@@ -98,24 +119,37 @@ class FindHP():
                 'leaky': 1,
                 'layers': layers
             }
-            tuner.search(self.channel.X_train,
-                         self.channel.y_train,
-                         epochs=5,
-                         validation_data=(self.channel.X_valid, self.channel.y_valid),
-                         verbose=1
-                         )
+            if self.config.serialization:
+                #we don't specify batch size
+                tuner.search(self.channel.X_train,
+                             self.channel.y_train,
+                             epochs=self.config.epochs,
+                             callbacks=cbs,
+                             validation_data=(self.channel.X_valid, self.channel.y_valid),
+                             verbose=1
+                             )
+            else:
+                tuner.search(self.channel.X_train,
+                             self.channel.y_train,
+                             epochs=self.config.epochs,
+                             batch_size=batch_size,
+                             callbacks=cbs,
+                             validation_data=(self.channel.X_valid, self.channel.y_valid),
+                             verbose=1
+                             )
         elif self.model == "LSTM":
+            # default hp
             hp = {
                 'units': 1,
                 'dropout': 0.10,
                 'layers': layers,
             }
-            batch_size = self.config.lstm_batch_size
             tuner.search(self.channel.X_train,
                          self.channel.y_train,
                          batch_size=batch_size,
-                         epochs=5,
+                         epochs=self.config.epochs,
                          validation_data=(self.channel.X_valid, self.channel.y_valid),
+                         callbacks=cbs,
                          verbose=1
                          )
 
@@ -127,6 +161,13 @@ class FindHP():
             hp["input_scaling"] = float("{:.2f}".format(best_hps.get('input_scaling')))
             hp["radius"] = float("{:.2f}".format(best_hps.get('spectral_radius')))
             hp["leaky"] = float("{:.2f}".format(best_hps.get('leaky')))
+
+            logger.info("chan id: {}\n "
+                        "units: {}\n "
+                        "input_scaling: {}\n"
+                        "radius: {}\n"
+                        "leaky: {}\n"
+                        "layers: {}".format(self.channel.id,hp["units"],hp["input_scaling"], hp["radius"], hp["leaky"],layers))
 
         if self.model == "LSTM":
             hp["units"] = best_hps.get('units')
