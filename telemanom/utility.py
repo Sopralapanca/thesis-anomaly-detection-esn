@@ -1,7 +1,7 @@
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
 from tensorflow.keras.layers import LSTM, Dense, Dropout
-#from telemanom.ESN import SimpleESN
+from telemanom.ESN import SimpleESN
 from telemanom.ESNnoserializzazione import ESNnoser
 import random
 
@@ -24,7 +24,7 @@ def create_lstm_model(channel,config, hp):
                       optimizer=config.optimizer)
 
     else:
-
+        print("LSTM CARICO GLI HP")
         units = int(hp["units"])
         dropout = float(hp["dropout"])
         learning_rate = float(hp["learning_rate"])
@@ -53,15 +53,33 @@ def create_lstm_model(channel,config, hp):
 
 def create_esn_model(channel,config, hp, seed):
     if len(hp) == 0:
-        model = ESNnoser(config=config,
-                          SEED=seed
-                          )
+        if config.serialization == True:
+            model = SimpleESN(config=config,
+                              SEED=seed,
+                              circular_law=config.circular_law,
+                             )
+        else:
+            model = ESNnoser(config=config,
+                              SEED=seed,
+                              circular_law=config.circular_law,
+                             )
         model.build(input_shape=(channel.X_train.shape[0], channel.X_train.shape[1], channel.X_train.shape[2]))
         model.compile(loss=config.loss_metric,
                       optimizer=config.optimizer)
 
     else:
-        model = ESNnoser(config=config,
+        if config.serialization == True:
+            model = SimpleESN(config=config,
+                          units=int(hp["units"]),
+                          input_scaling=float(hp["input_scaling"]),
+                          spectral_radius=float(hp["radius"]),
+                          leaky=float(hp["leaky"]),
+                          SEED=seed,
+                          layers=int(hp["layers"]),
+                          circular_law=config.circular_law
+                          )
+        else:
+            model = ESNnoser(config=config,
                           units=int(hp["units"]),
                           input_scaling=float(hp["input_scaling"]),
                           spectral_radius=float(hp["radius"]),
