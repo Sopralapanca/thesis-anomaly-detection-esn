@@ -132,7 +132,7 @@ class ReservoirCell(keras.layers.Layer):
         return cls(**config)
 
 class ESNnoser(keras.Model):
-    def __init__(self, units=100, input_scaling=1,
+    def __init__(self, units=500, input_scaling=1,
                  spectral_radius=0.99, leaky=1,
                  config=None, SEED=42, layers=1, connectivity_recurrent=10,
                  circular_law = False,

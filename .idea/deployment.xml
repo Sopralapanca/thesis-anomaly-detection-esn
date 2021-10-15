@@ -1,29 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" serverName="unipi" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" serverName="carfi@131.114.142.4:22 password" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
-      <paths name="carfi@131.114.142.4:22">
+      <paths name="Copy of project-level server 'pi'">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="carfi@131.114.142.4:22 password">
         <serverdata>
           <mappings>
             <mapping deploy="/home/carfi/tesi" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="pi@192.168.1.12:22">
+      <paths name="carfi@131.114.50.175:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/carfi/tesi" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="carfi@131.114.50.236:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/carfi/tesi" local="$PROJECT_DIR$" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="pi@192.168.1.104:22">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="ubuntu@34.253.205.213:22 key">
-        <serverdata>
-          <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="unipi">
+      <paths name="ubuntu@34.253.205.213:22">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />

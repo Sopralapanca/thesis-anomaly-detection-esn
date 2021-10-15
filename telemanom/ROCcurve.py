@@ -4,11 +4,12 @@ from sklearn.metrics import auc
 
 
 
-def plot_roc_curve(fpr, tpr):
+def plot_roc_curve(fpr, tpr, path):
     """
     Plot the Receiver Operating Characteristic curve
     :param fpr: list containing the values of the false positive rate as p varies
     :param tpr: list containing the values of the true positive rate as p varies
+    :param path: path to p_values.csv file
     :return: plot the Receiver Operating Characteristic curve
     """
 
@@ -25,19 +26,18 @@ def plot_roc_curve(fpr, tpr):
 
     fig.set_size_inches(8, 6)
 
-    plt.savefig('./data/{}/roc_curve.png'.format(id))
+    save_path = path.replace("p_values.csv", "roc_curve.png")
+    plt.savefig(save_path)
     plt.show()
 
 
-def roc_curve(id):
+def roc_curve(path):
     """
     Given the name of a folder of an experiment, it creates the graph for the roc curve and calculates the auroc score
-    :param id: folder name
+    :param path: path to p_values.csv files
     :return: auroc score
     """
 
-
-    path='./data/{}/p_values.csv'.format(id)
     df = pd.read_csv(path)
 
     p = []
@@ -58,7 +58,7 @@ def roc_curve(id):
         fpr_list.append(false_positive_rate)
 
 
-    plot_roc_curve(fpr_list, tpr_list)
+    plot_roc_curve(fpr_list, tpr_list, path)
 
 
     return(auc(fpr_list,tpr_list))

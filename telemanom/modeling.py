@@ -11,7 +11,7 @@ from telemanom.utility import create_lstm_model, create_esn_model
 import random
 
 # suppress tensorflow CPU speedup warnings
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 logger = logging.getLogger('telemanom')
 
 def get_seed(folder, chan_id):
@@ -212,7 +212,7 @@ class Model:
             self.model.save(os.path.join('data', self.run_id, 'models',
                                          '{}.h5'.format(self.chan_id)))
 
-    def aggregate_predictions(self, y_hat_batch, method='mean'):
+    def aggregate_predictions(self, y_hat_batch, method='first'):
         """
         Aggregates predictions for each timestep. When predicting n steps
         ahead where n > 1, will end up with multiple predictions for a
@@ -223,7 +223,7 @@ class Model:
             method (string): indicates how to aggregate for a timestep - "first"
                 or "mean"
         """
-
+        print("method: ", method)
         agg_y_hat_batch = np.array([])
 
         for t in range(len(y_hat_batch)):
@@ -260,7 +260,7 @@ class Model:
             raise ValueError('l_s ({}) too large for stream length {}.'
                              .format(self.config.l_s, channel.y_test.shape[0]))
 
-
+        method = self.config.method
         # simulate data arriving in batches, predict each batch
         for i in range(0, num_batches + 1):
             prior_idx = i * self.config.batch_size
@@ -272,7 +272,7 @@ class Model:
 
             X_test_batch = channel.X_test[prior_idx:idx]
             y_hat_batch = self.model.predict(X_test_batch)
-            self.aggregate_predictions(y_hat_batch)
+            self.aggregate_predictions(y_hat_batch, method=method)
 
 
         self.y_hat = np.reshape(self.y_hat, (self.y_hat.size,))

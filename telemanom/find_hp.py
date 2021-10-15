@@ -1,5 +1,5 @@
 from telemanom.ESN import SimpleESN
-from telemanom.ESNnoserializzazione import ESNnoser
+#from telemanom.ESNnoserializzazione import ESNnoser
 import yaml
 from keras_tuner.engine.hypermodel import HyperModel
 from keras_tuner.tuners import RandomSearch
@@ -24,30 +24,17 @@ class MyHyperModel(HyperModel):
 
     def build(self, hp):
         if self.model == "ESN":
-            units = hp.Choice("units",[100, 200, 300, 400, 500, 600, 700, 800, 850])
-            if self.config.serialization == True:
-                model = SimpleESN(config=self.config,
+            units = hp.Choice("units",[100, 300, 500, 800, 1000, 1200, 1500, 1700, 2000, 2200, 2550])
+            model = SimpleESN(config=self.config,
                                   units=units,
                                   input_scaling=hp.Choice("input_scaling",[0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]),
                                   spectral_radius=hp.Choice("spectral_radius",
                                                             [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]),
-                                  leaky=hp.Float("leaky", 0.1, 1, 0.10),
+                                  leaky=hp.Float("leaky", 0, 1, 0.10),
                                   layers=self.layers,
                                   circular_law=self.config.circular_law,
                                   SEED=SEED
                                   )
-            else:
-                model = ESNnoser(config=self.config,
-                                 units=units,
-                                 input_scaling=hp.Choice("input_scaling",
-                                                         [0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]),
-                                 spectral_radius=hp.Choice("spectral_radius",
-                                                           [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]),
-                                 leaky=hp.Float("leaky", 0.1, 1, 0.10),
-                                 layers=self.layers,
-                                 circular_law=self.config.circular_law,
-                                 SEED=SEED
-                                 )
 
             model.build(input_shape=(self.channel.X_train.shape[0], self.channel.X_train.shape[1], self.channel.X_train.shape[2]))
 
@@ -58,9 +45,9 @@ class MyHyperModel(HyperModel):
             tf.random.set_seed(SEED)
 
             if self.layers > 1:
-                units = hp.Choice("units", values=[1,5,10,15,19])
+                units = hp.Choice("units", values=[10,15,20,25,30,35,40, 42])
             else:
-                units = hp.Choice("units", values=[1, 5, 10, 15, 20, 26])
+                units = hp.Choice("units", values=[10, 20, 30, 40, 50, 60, 67])
 
             model = Sequential()
 
