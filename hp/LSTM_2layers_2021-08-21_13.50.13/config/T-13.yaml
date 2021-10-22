@@ -1,4 +1,0 @@
-dropout: 0.4
-layers: 2
-learning_rate: 0.01
-units: 25

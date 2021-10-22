@@ -1,5 +1,4 @@
 from telemanom.ESN import SimpleESN
-#from telemanom.ESNnoserializzazione import ESNnoser
 import yaml
 from keras_tuner.engine.hypermodel import HyperModel
 from keras_tuner.tuners import RandomSearch
@@ -10,6 +9,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.callbacks import History, EarlyStopping
 import numpy as np
 import random
+
 
 SEED = 42
 logger = logging.getLogger('telemanom')
@@ -24,13 +24,22 @@ class MyHyperModel(HyperModel):
 
     def build(self, hp):
         if self.model == "ESN":
-            units = hp.Choice("units",[100, 300, 500, 800, 1000, 1200, 1500, 1700, 2000, 2200, 2550])
+            if self.config.serialization:
+                units = hp.Choice("units",[100, 300, 500, 800, 1000, 1200, 1500, 1700, 2000, 2200, 2550, 2700, 3000])
+            else:
+                units = hp.Choice("units", [100, 300, 500, 800, 1000, 1200, 1500, 1700, 2000, 2200, 2550])
+            # leaky
+            if self.config.circular_law == False:
+                l = hp.Float("leaky", 0.1, 1, 0.10)
+            else:
+                l = 1
+
             model = SimpleESN(config=self.config,
                                   units=units,
                                   input_scaling=hp.Choice("input_scaling",[0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]),
                                   spectral_radius=hp.Choice("spectral_radius",
                                                             [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]),
-                                  leaky=hp.Float("leaky", 0, 1, 0.10),
+                                  leaky=l,
                                   layers=self.layers,
                                   circular_law=self.config.circular_law,
                                   SEED=SEED
@@ -147,7 +156,10 @@ class FindHP():
             hp["units"] = best_hps.get('units')
             hp["input_scaling"] = float("{:.2f}".format(best_hps.get('input_scaling')))
             hp["radius"] = float("{:.2f}".format(best_hps.get('spectral_radius')))
-            hp["leaky"] = float("{:.2f}".format(best_hps.get('leaky')))
+            if self.config.circular_law == False:
+                hp["leaky"] = float("{:.2f}".format(best_hps.get('leaky')))
+            else:
+                hp["leaky"] = 1
 
             logger.info("chan id: {}\n"
                         "units: {}\n"

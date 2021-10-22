@@ -80,7 +80,7 @@ class Model:
                         hp = yaml.load(file, Loader=yaml.BaseLoader)
 
                 if self.config.model_architecture != "LSTM":
-                    # get seed for that model
+                    # get seed for a specific model model
                     seed = get_seed(self.config.use_id, self.chan_id)
                     self.model = create_esn_model(channel, self.config, hp, seed)
 
@@ -124,7 +124,6 @@ class Model:
             try:
                 with open(path, 'r') as file:
                     hp = yaml.load(file, Loader=yaml.BaseLoader)
-                    print(hp)
 
                 if self.config.model_architecture == "ESN":
                     logger.info('units: {}'.format(hp["units"]))
@@ -169,13 +168,21 @@ class Model:
             SEED = random.randint(43, 999999999)
             if self.config.model_architecture == "ESN":
                 self.model = create_esn_model(channel,self.config, hp, SEED)
-                self.history = self.model.fit(channel.X_train,
+                if self.config.serialization:
+                    self.history = self.model.fit(channel.X_train,
                                               channel.y_train,
                                               validation_data=(channel.X_valid, channel.y_valid),
                                               epochs=self.config.epochs,
                                               callbacks=cbs,
                                               verbose=True)
-
+                else:
+                    self.history = self.model.fit(channel.X_train,
+                                                  channel.y_train,
+                                                  validation_data=(channel.X_valid, channel.y_valid),
+                                                  epochs=self.config.epochs,
+                                                  batch_size=self.config.lstm_batch_size,
+                                                  callbacks=cbs,
+                                                  verbose=True)
 
 
         logger.info('validation_loss: {}\n'.format(self.history.history["val_loss"][-1]))
@@ -223,7 +230,6 @@ class Model:
             method (string): indicates how to aggregate for a timestep - "first"
                 or "mean"
         """
-        print("method: ", method)
         agg_y_hat_batch = np.array([])
 
         for t in range(len(y_hat_batch)):

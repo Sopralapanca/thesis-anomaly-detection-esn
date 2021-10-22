@@ -81,10 +81,11 @@ class ReservoirCell(keras.layers.Layer):
     # The implementation is parametrized by:
     # units - the number of recurrent neurons in the reservoir
     # input_scaling - the max abs value of a weight in the input-reservoir connections
-    #                 note that whis value also scales the unitary input bias
+    #                 note that this value also scales the unitary input bias
     # spectral_radius - the max abs eigenvalue of the recurrent weight matrix
     # leaky - the leaking rate constant of the reservoir
     # connectivity_input - number of outgoing connections from each input unit to the reservoir
+    # circular_law - used for initialization of the weight matrix
 
     def __init__(self, units, SEED,
                  input_scaling=1., spectral_radius=0.99, leaky=1,connectivity_recurrent=1,
@@ -144,7 +145,10 @@ class ReservoirCell(keras.layers.Layer):
         else:
             state_part = tf.sparse.sparse_dense_matmul(prev_output, self.recurrent_kernel)
 
-        output = prev_output * (1 - self.leaky) + tf.nn.tanh(input_part + self.bias + state_part) * self.leaky
+        if self.circular_law:
+            output = tf.nn.tanh(input_part + self.bias + state_part)
+        else:
+            output = prev_output * (1 - self.leaky) + tf.nn.tanh(input_part + self.bias + state_part) * self.leaky
 
         return output, [output]
 
@@ -156,7 +160,8 @@ class ReservoirCell(keras.layers.Layer):
                 "spectral_radius": self.spectral_radius,
                 "leaky": self.leaky,
                 "input_scaling": self.input_scaling,
-                "state_size": self.state_size
+                "state_size": self.state_size,
+                "circular_law": self.circular_law
                 }
 
     def from_config(cls, config):
@@ -241,12 +246,6 @@ class SimpleESN(keras.Model):
         while True:
             yield x, y
 
-    #da eliminare
-    def secondsToStr(self, t):
-        from functools import reduce
-        return "%dh:%02dm:%02ds.%03dms" % \
-               reduce(lambda ll, b: divmod(ll[0], b) + ll[1:],
-                      [(t * 1000,), 1000, 60, 60])
 
     def fit(self, x, y, **kwargs):
         """
@@ -257,17 +256,12 @@ class SimpleESN(keras.Model):
         :return: training only on the readout level
         """
 
-        import time
-        logger = logging.getLogger('tests.log')
-
         if self.config.serialization:
-            print("uso serializzazione")
 
             N = self.config.esn_batch_number
             training_steps = x.shape[0]//N
             train_reservoir = "./temp_files/train_reservoir.tfrecord"
 
-            start_time = time.time()
 
             with tf.io.TFRecordWriter(train_reservoir) as file_writer:
                 for i in range(N):
@@ -303,9 +297,6 @@ class SimpleESN(keras.Model):
 
                         file_writer.write(example)
 
-            end_time = time.time() - start_time
-            time_string = self.secondsToStr(end_time)
-            logger.info("Tempo precalcolo++scrittura reservoir: "+time_string)
 
             # reading tfrecord files
             train_dataset = tf.data.TFRecordDataset(train_reservoir).map(read_tfrecord)
@@ -319,7 +310,7 @@ class SimpleESN(keras.Model):
             return self.readout.fit(train_ds, steps_per_epoch=N, validation_steps = validation_steps, **kwargs)
 
         else:
-            print("non uso serializzazione")
+
             X_train = self.reservoir(x)
             x_val, y_val = kwargs['validation_data']
             x_val_1 = self.reservoir(x_val)
