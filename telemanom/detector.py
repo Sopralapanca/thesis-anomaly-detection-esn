@@ -155,7 +155,6 @@ class Detector:
         result_row = {
             'false_positives': 0,
             'false_negatives': 0,
-            'true_negatives': 0,
             'true_positives': 0,
             'fp_sequences': [],
             'tp_sequences': [],
@@ -167,18 +166,6 @@ class Detector:
         label_row['anomaly_sequences'] = eval(label_row['anomaly_sequences'])
         result_row['num_true_anoms'] += len(label_row['anomaly_sequences'])
         result_row['scores'] = errors.anom_scores
-
-        idx = label_row['anomaly_sequences']
-        if idx[0][0] > 0 and idx[-1][-1] < label_row['num_values']:
-            total_negatives = len(label_row['anomaly_sequences']) +1
-
-        elif  idx[0][0] > 0:
-            total_negatives = len(label_row['anomaly_sequences'])
-        elif idx[-1][-1] < label_row['num_values']:
-            total_negatives = len(label_row['anomaly_sequences'])
-        else:
-            total_negatives = len(label_row['anomaly_sequences']) -1
-
 
 
         if len(errors.E_seq) == 0:
@@ -213,20 +200,12 @@ class Detector:
                                                           matched_true_seqs, axis=0))
 
 
-        # true negatives detected = true negatives - false positives
-
-        n_fp = len(result_row['fp_sequences'])
-        row_true_negative = total_negatives - n_fp
-        if row_true_negative <0:
-            row_true_negative = 0
-        result_row['true_negatives'] = row_true_negative
 
 
         if self.config.execution != "search_p":
-            logger.info('Channel Stats: TP: {}  FP: {}  FN: {} TN: {}'.format(result_row['true_positives'],
+            logger.info('Channel Stats: TP: {}  FP: {}  FN: {}'.format(result_row['true_positives'],
                                                                    result_row['false_positives'],
-                                                                   result_row['false_negatives'],
-                                                                   result_row['true_negatives']))
+                                                                   result_row['false_negatives']))
 
         for key, value in result_row.items():
             if key in self.result_tracker:
@@ -251,18 +230,23 @@ class Detector:
                         .format(self.result_tracker['false_positives']))
             logger.info('False Negatives: {}'
                         .format(self.result_tracker['false_negatives']))
-            logger.info('True Negatives: {}\n'
-                        .format(self.result_tracker['true_negatives']))
             try:
                 self.precision = float(self.result_tracker['true_positives']) / (float(self.result_tracker['true_positives'] + self.result_tracker['false_positives']))
                 self.recall = float(self.result_tracker['true_positives']) / (float(self.result_tracker['true_positives'] + self.result_tracker['false_negatives']))
 
+                self.f1 = 2*((self.precision*self.recall)/(self.precision+self.recall))
+
+
+                #calcola f1 score e scrivi nel file di log
+
                 logger.info('Precision: {0:.2f}'.format(self.precision))
-                logger.info('Recall: {0:.2f}\n'.format(self.recall))
+                logger.info('Recall: {0:.2f}'.format(self.recall))
+                logger.info('F1 Score: {0:.2f}\n'.format(self.f1))
             except ZeroDivisionError:
 
                 logger.info('Precision: NaN')
-                logger.info('Recall: NaN\n')
+                logger.info('Recall: NaN')
+                logger.info('F1 Score: NaN\n')
 
         else:
             logger.info('Final Totals:')
@@ -415,8 +399,7 @@ class Detector:
                                 .format(self.result_tracker['false_positives']))
                     logger.info('Total false negatives: {}'
                                 .format(self.result_tracker['false_negatives']))
-                    logger.info('Total true negatives: {}\n'
-                                .format(self.result_tracker['true_negatives']))
+
 
             else:
                 result_row['anomaly_sequences'] = errors.E_seq
@@ -486,15 +469,12 @@ class Detector:
 
         if self.config.execution == "search_p":
             # header for csv file
-            col_header = ["P", "Precision", "Recall", "Total True Positives", "Total False Positives", "Total False Negatives",
-                          "Total True Negatives"]
+            col_header = ["P", "Precision", "Recall", "Total True Positives", "Total False Positives", "Total False Negatives"]
 
             df = pd.DataFrame(columns=col_header)
 
             # creates the array of values for p
-            # for p values tending to 1 recall tends to 0 and precision tends to 1
-            # then we limit the p values from 0.01 to 0.35
-            array = np.linspace(0.01, 0.35, 35).tolist()
+            array = np.linspace(0.00, 1, 100).tolist()
             formatted_array = [round(elem, 2) for elem in array]
 
             i=0
@@ -504,8 +484,7 @@ class Detector:
                 self.execute_detection()
 
                 row = [self.config.p, self.precision, self.recall, self.result_tracker['true_positives'],
-                       self.result_tracker['false_positives'], self.result_tracker['false_negatives'],
-                       self.result_tracker['true_negatives']]
+                       self.result_tracker['false_positives'], self.result_tracker['false_negatives']]
 
                 df.loc[i] = row
                 i += 1
@@ -513,8 +492,7 @@ class Detector:
                 self.result_tracker = {
                     'true_positives': 0,
                     'false_positives': 0,
-                    'false_negatives': 0,
-                    'true_negatives': 0
+                    'false_negatives': 0
                 }
             df.to_csv('./data/{}/p_values.csv'.format(self.id), sep=',')
 

@@ -7,13 +7,13 @@
 # predict: makes predictions using models already trained using use_id as project folder and performs anomaly detection
 # search_p: tries different values for p parameter, use use_id as project folder to load predictions
 # find_hp: searches for optimal values for hyperparameters for ESN and LSTM
-execution: "train" #train, predict, train_and_predict, search_p, find_hp
-use_id: "ESN_1l_SER_NO_CL_5times_training"   # folder name where prior trained models have been saved
-load_hp: True # if true, during training, load the optimal values of the hyperparameters using hp_research_id folder
+execution: "train_and_predict" #train, predict, train_and_predict, search_p, find_hp
+use_id: ""   # folder name where prior trained models have been saved
+load_hp: False # if true, during training, load the optimal values of the hyperparameters using hp_research_id folder
 model_architecture: "ESN" # neural network architecture LSTM, ESN
 name: "" # project name folder
 method: "mean" # indicates how to aggregate for a timestep - "first" or "mean"
-hp_research_id: "ESN_1l_SER_NO_CL_2021-10-20_09.26.28" # folder of a hyperparameters search
+hp_research_id: "" # folder of a hyperparameters search
 
 save_graphs: True # if True saves the graphs for loss and validation loss
 
@@ -43,8 +43,8 @@ validation_split: 0.2
 dropout: 0.3
 lstm_batch_size: 64
 esn_batch_number: 32
-circular_law: False
-serialization: True
+circular_law: True
+serialization: False
 
 # model selection parameters
 # ==================================
@@ -73,7 +73,7 @@ n_predictions: 10
 # ==================================
 
 # minimum percent decrease between max errors in anomalous sequences (used for pruning)
-p: 0.13
+p: 0.08
 
 # threshold used to create the graph saved in PrecisionVSRecall_2.png
 precision_threshold: 0.70

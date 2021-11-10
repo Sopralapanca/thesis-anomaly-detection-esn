@@ -1,23 +1,7 @@
 INFO:root:Channel name: P-10
-INFO:root:Number of sequences: 2590
+INFO:root:Tempo build con circular law: 0h:00m:00s.146ms
+INFO:root:Tempo build senza circular law: 0h:32m:20s.435ms
+INFO:root:Tempo pre-calcolo, serializzazione e rilettura: 0h:00m:06s.819ms
 
-INFO:root:Model: ESN precalcolo+serializzazione
-INFO:root:Tempo inizializzazione: 0h:00m:01s.562ms
-INFO:root:Tempo build: 0h:01m:33s.851ms
-INFO:root:Tempo compile: 0h:00m:00s.004ms
-INFO:tests.log:Tempo precalcolo+scrittura reservoir: 0h:00m:07s.663ms
-INFO:root:Tempo precalcolo+scrittura+rilettura+allenamento: 0h:00m:10s.243ms
 
-INFO:root:Model: ESN no precalcolo
-INFO:root:Tempo inizializzazione: 0h:00m:00s.014ms
-INFO:root:Tempo build: 0h:01m:34s.917ms
-INFO:root:Tempo compile: 0h:00m:00s.004ms
-INFO:root:Tempo allenamento: 0h:02m:13s.429ms
-
-INFO:root:Model: ESN noserializzazione
-INFO:root:Tempo inizializzazione: 0h:00m:00s.026ms
-INFO:root:Tempo build: 0h:01m:36s.000ms
-INFO:root:Tempo compile: 0h:00m:00s.004ms
-INFO:tests.log:Tempo precalcolo reservoir: 0h:00m:00s.590ms
-INFO:root:Tempo precalcolo+allenamento: 0h:00m:03s.629ms
 

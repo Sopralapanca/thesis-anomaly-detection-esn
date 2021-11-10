@@ -196,6 +196,8 @@ class Model:
             plt.figure()
             plt.plot(self.history.history["loss"], label="Training Loss")
             plt.plot(self.history.history["val_loss"], label="Validation Loss")
+            plt.xlabel("Epochs")
+            plt.ylabel("Loss")
             plt.title(f'Training and validation loss model: {self.config.model_architecture} channel: {self.chan_id}')
 
             plt.legend()

@@ -5,7 +5,15 @@ from tensorflow.keras.models import Sequential
 import os
 import random
 import logging
+import time
 
+from functools import reduce
+
+
+def secondsToStr(t):
+    return "%dh:%02dm:%02ds.%03dms" % \
+        reduce(lambda ll,b : divmod(ll[0],b) + ll[1:],
+            [(t*1000,),1000,60,60])
 
 def _bytes_feature(value):
   if isinstance(value, type(tf.constant(0))):
@@ -99,7 +107,7 @@ class ReservoirCell(keras.layers.Layer):
         self.leaky = leaky
         self.connectivity_recurrent = connectivity_recurrent
         self.SEED = SEED
-        self.circular_law = circular_law,
+        self.circular_law = circular_law
         super().__init__(**kwargs)
 
     def build(self, input_shape):
@@ -256,13 +264,15 @@ class SimpleESN(keras.Model):
         :return: training only on the readout level
         """
 
-        if self.config.serialization:
+        #used for tests
+        #logging.basicConfig(filename="tests.log", level=logging.INFO)
 
+        if self.config.serialization:
             N = self.config.esn_batch_number
             training_steps = x.shape[0]//N
             train_reservoir = "./temp_files/train_reservoir.tfrecord"
 
-
+            start_time = time.time()
             with tf.io.TFRecordWriter(train_reservoir) as file_writer:
                 for i in range(N):
                     X_train = self.reservoir(x[i * training_steps:(i + 1) * training_steps])
@@ -285,6 +295,14 @@ class SimpleESN(keras.Model):
 
                 x_val_1 = self.reservoir(x_val)
                 kwargs['validation_data'] = (x_val_1, y_val)
+
+                end_time = time.time() - start_time
+                time_string = secondsToStr(end_time)
+
+                # used for tests
+                # logging.info("Tempo pre-calcolo, serializzazione e rilettura: " + time_string)
+
+
                 return self.readout.fit(iterator, steps_per_epoch=N, **kwargs)
 
             else:
@@ -305,6 +323,11 @@ class SimpleESN(keras.Model):
             valid_ds = self.generator(validation_dataset)
 
             kwargs['validation_data'] = (valid_ds)
+
+            end_time = time.time() - start_time
+            time_string = secondsToStr(end_time)
+            # used for tests
+            # logging.info("Tempo pre-calcolo, serializzazione e rilettura: " + time_string)
 
 
             return self.readout.fit(train_ds, steps_per_epoch=N, validation_steps = validation_steps, **kwargs)

@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import os.path
 import argparse
+import logging
+
 
 parser = argparse.ArgumentParser(description='Parse name to project folder.')
 parser.add_argument('-f', '--folder_name', default=None, required=True)
@@ -12,6 +14,8 @@ def calculate_avg_std(folder):
     :param folder: folder name to which the losses.csv file belongs
     :return: if the file exists, it calculates the mean and standard deviation and writes them to the file
     """
+    log_path = "./data/logs/{}.log".format(folder)
+    logging.basicConfig(filename=log_path, level=logging.INFO)
 
     csv_path = "./data/{}/losses.csv".format(folder)
     if os.path.isfile(csv_path):
@@ -50,5 +54,15 @@ def calculate_avg_std(folder):
 
     df.to_csv(csv_path, sep=',', index=False)
 
+    valid_avg_column = df["Valid AVG"]
+    valid_avg_max_value = valid_avg_column.max()
+    valid_std_column = df["Valid STD"]
+    valid_std_max_value = valid_std_column.max()
+
+    logging.info("highest average loss on the validation set: {}".format(valid_avg_max_value))
+    logging.info("highest standard deviation on the validation set: {}".format(valid_std_max_value))
+
+
+
 if __name__ == '__main__':
-    calculate_avg_std(folder=args.labels_path)
+    calculate_avg_std(folder=args.folder_name)

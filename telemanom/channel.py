@@ -72,10 +72,16 @@ class Channel:
 
 
         # we create train and validation set
-        self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.X_train,
+
+        if self.config.execution == "find_hp":
+            self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.X_train,
                                                                                   self.y_train,
                                                                                   test_size=self.config.validation_split,
                                                                                   random_state=42)
+        else:
+            self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.X_train,
+                                                                                      self.y_train,
+                                                                                      test_size=self.config.validation_split)
     def load_data(self):
         """
         Load train and test data from local.

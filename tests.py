@@ -1,58 +1,23 @@
-from temp_files.ESNnoserializzazione import ESNnoser
 import pandas as pd
 from telemanom.channel import Channel
 from telemanom.helpers import Config
+from telemanom.ESN import SimpleESN
 from functools import reduce
 import logging
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+import time
+
 
 #logs
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 logging.basicConfig(filename="tests.log", level=logging.INFO)
 
 epochs = 150
-units=2000
+units=2550
 input_scaling=1
 spectral_radius=0.99
-leaky=0.8
+leaky=1
 layers=1
-
-
-def esn_noserializzazione(config):
-    model = ESNnoser(config=config,
-                      units=2550,
-                      input_scaling=input_scaling,
-                      spectral_radius=spectral_radius,
-                      leaky=leaky,
-                      layers=layers,
-                      circular_law=True,
-                      )
-
-    #start_time = time.time()
-    model.build(input_shape=(channel.X_train.shape[0], channel.X_train.shape[1], channel.X_train.shape[2]))
-
-    return model
-
-    #end_time = time.time() - start_time
-    #time_string = secondsToStr(end_time)
-    #logging.info("Tempo build con circular law: {}".format(time_string))
-
-    """model2 = ESNnoser(config=config,
-                     units=units,
-                     input_scaling=input_scaling,
-                     spectral_radius=spectral_radius,
-                     leaky=leaky,
-                     layers=layers,
-                     circular_law = False,
-                     )
-
-    start_time = time.time()
-    model2.build(input_shape=(channel.X_train.shape[0], channel.X_train.shape[1], channel.X_train.shape[2]))
-    end_time = time.time() - start_time
-    time_string = secondsToStr(end_time)
-    logging.info("Tempo build senza circular law: " + time_string)"""
-
 
 
 def secondsToStr(t):
@@ -66,28 +31,69 @@ config = Config(config_path)
 
 chan_df = pd.read_csv("labeled_anomalies.csv")
 
-columns = ["model", "init time", "build time", "write/read time", "fit time"]
-df = pd.DataFrame(columns=columns)
-
 for i, row in chan_df.iterrows():
     chan_id = row.chan_id
 
+    if chan_id != "P-10":
+        pass
 
     channel = Channel(config, row.chan_id)
     channel.load_data()
-    print("channel: ", chan_id)
 
-    #logging.info("Channel name: "+chan_id)
-    #logging.info("Number of sequences: "+str(len(channel.X_train)))
 
-    #si precalcolo no serializzazione
-    model = esn_noserializzazione(config)
+    logging.info("Channel name: "+chan_id)
 
-    model.fit(channel.X_train,
+    #test con legge circolare
+    model = SimpleESN(config=config,
+                      units=units,
+                      input_scaling=input_scaling,
+                      spectral_radius=spectral_radius,
+                      leaky=leaky,
+                      layers=layers,
+                      circular_law=True,
+                      SEED=42,
+                      )
+
+    start_time = time.time()
+    model.build(input_shape=(channel.X_train.shape[0], channel.X_train.shape[1], channel.X_train.shape[2]))
+    end_time = time.time() - start_time
+    time_string = secondsToStr(end_time)
+    logging.info("Tempo build con circular law: " + time_string)
+
+    # test senza legge circolare
+    model2 = SimpleESN(config=config,
+                       units=units,
+                       input_scaling=input_scaling,
+                       spectral_radius=spectral_radius,
+                       leaky=leaky,
+                       layers=layers,
+                       circular_law=False,
+                       SEED=42
+                       )
+
+    start_time = time.time()
+    model2.build(input_shape=(channel.X_train.shape[0], channel.X_train.shape[1], channel.X_train.shape[2]))
+    end_time = time.time() - start_time
+    time_string = secondsToStr(end_time)
+    logging.info("Tempo build senza circular law: " + time_string)
+
+    # test serializzazione
+    model3 = SimpleESN(config=config,
+                       units=3000,
+                       input_scaling=input_scaling,
+                       spectral_radius=spectral_radius,
+                       leaky=leaky,
+                       layers=layers,
+                       circular_law=True,
+                       SEED=42
+                       )
+
+    model3.fit(channel.X_train,
               channel.y_train,
               validation_data=(channel.X_valid, channel.y_valid),
               epochs=5,
               verbose=True)
+    break
 
 
 

@@ -54,7 +54,7 @@ class MyHyperModel(HyperModel):
             tf.random.set_seed(SEED)
 
             if self.layers > 1:
-                units = hp.Choice("units", values=[10,15,20,25,30,35,40, 42])
+                units = hp.Choice("units", values=[10,15,20,25,30,35,40,42])
             else:
                 units = hp.Choice("units", values=[10, 20, 30, 40, 50, 60, 67])
 

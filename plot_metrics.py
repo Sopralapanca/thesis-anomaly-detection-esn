@@ -1,9 +1,7 @@
 import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
-import logging
 from telemanom.helpers import Config
-from telemanom.ROCcurve import roc_curve
 
 config_path = "config.yaml"
 config = Config(config_path)
@@ -23,7 +21,7 @@ def plotting_p(precision=None, recall=None, p=None, focus=False, run_id="",
         xoffset = 0.30
         switch = -0.6
         bbox_props = dict(boxstyle="round", fc="w", ec="0.5", alpha=0.9)
-        ax.scatter(precision2, recall2, s=180, color='red', label='best p values')
+        ax.scatter(precision2, recall2, s=180, color='red', label='chosen candidates')
         j="2"
     else:
         xoffset = 0.1
@@ -134,14 +132,10 @@ def metrics(path, log_path):
             break
         else:
             with open(log_path, 'a') as fh:
-                fh.write("No values found with threshold recall: {} precision: {}".format(recall_threshold, precision_threshold))
+                fh.write("No values found with threshold recall: {} precision: {}\n".format(recall_threshold, precision_threshold))
             recall_threshold -= 0.05
+            precision_threshold -= 0.05
 
-    # roc curve
-    auc = roc_curve(path)
-
-    with open(log_path, 'a') as fh:
-        fh.write("AUC score: {}\n".format(auc))
 
 
 
